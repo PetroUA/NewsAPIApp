@@ -12,7 +12,7 @@ class NewsAPI {
         let searchKeywords: String?
         let country: Country?
         let category: Category?
-        let sources: [Source]?
+        let everythingSources: [Source]?
         let sortBy: SortBy?
         let page: Int?
         let pageSize: Int?
@@ -20,7 +20,11 @@ class NewsAPI {
     
     let apiKey: String
     let session: URLSession
-    lazy var jsonDecoder = JSONDecoder()
+    lazy var jsonDecoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
     
     init(apiKey: String, session: URLSession = URLSession.shared) {
         self.apiKey = apiKey
@@ -34,7 +38,7 @@ class NewsAPI {
             "category": requestParametrers.category?.rawValue,
             "country": requestParametrers.country?.rawValue,
             "q": requestParametrers.searchKeywords,
-            "sources": requestParametrers.sources?.map({ $0.id }).joined(separator: ","),
+            "sources": requestParametrers.everythingSources?.map({ $0.id }).joined(separator: ","),
             "sortBy": requestParametrers.sortBy?.rawValue,
             "page": requestParametrers.page.map({"\($0)"}),
             "pageSize": requestParametrers.pageSize.map({"\($0)"})
@@ -50,13 +54,13 @@ class NewsAPI {
             "category": requestParametrers.category?.rawValue,
             "country": requestParametrers.country?.rawValue,
             "q": requestParametrers.searchKeywords,
-            "sources": requestParametrers.sources?.map({ $0.id }).joined(separator: ","),
+            "sources": requestParametrers.everythingSources?.map({ $0.id }).joined(separator: ","),
             "sortBy": requestParametrers.sortBy?.rawValue,
             "page": requestParametrers.page.map({"\($0)"}),
             "pageSize": requestParametrers.pageSize.map({"\($0)"})
         ]
         
-        sendGetRequest(requestBaseURL: "https://newsapi.org/v2/everything", requestParametrers: parametersToSend, completion: completion)
+        sendGetRequest(requestBaseURL: "https://newsapi.org/v2/top-headlines", requestParametrers: parametersToSend, completion: completion)
     }
     
     func getSources(category: Category?, country: Country?, completion: @escaping (Result<SourcesResponse, Error>) -> Void ) {
@@ -92,6 +96,7 @@ private extension NewsAPI {
             }
             
             do {
+                //print("data=\(String(data: data, encoding: .utf8)!)")
                 let response = try self.jsonDecoder.decode(ResponseType.self, from: data)
                 completion(.success(response))
             }

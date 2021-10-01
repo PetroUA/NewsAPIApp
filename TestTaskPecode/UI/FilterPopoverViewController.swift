@@ -9,10 +9,10 @@ import Foundation
 import UIKit
 
 protocol FilterPopoverViewControllerDelegate: AnyObject {
-    func filterPopoverViewControllerFilterOptions(_ filterPopoverViewController: FilterPopoverViewController) -> [String]
-    func filterPopoverViewController(_ filterPopoverViewController: FilterPopoverViewController, isSelected filterOption: String) -> Bool
+    func filterPopoverViewControllerNeedsFilterOptions(_ filterPopoverViewController: FilterPopoverViewController) -> [NameableAndIdentifiable]
+    func filterPopoverViewController(_ filterPopoverViewController: FilterPopoverViewController, isSelected filterOption: NameableAndIdentifiable) -> Bool
     
-    func filterPopoverViewControllerNeedToInvertSelection(_ filterPopoverViewController: FilterPopoverViewController, for filterOption: String)
+    func filterPopoverViewControllerNeedToInvertSelection(_ filterPopoverViewController: FilterPopoverViewController, for filterOption: NameableAndIdentifiable)
 }
 
 class FilterPopoverViewController: UIViewController {
@@ -20,15 +20,15 @@ class FilterPopoverViewController: UIViewController {
     
     @IBOutlet var tableView: UITableView!
     
-    private var filterOptions: [String]?
+    private var filterOptions: [NameableAndIdentifiable]?
     
     weak var filterPopoverViewControllerDelegate: FilterPopoverViewControllerDelegate?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        filterOptions = filterPopoverViewControllerDelegate?.filterPopoverViewControllerFilterOptions(self)
-
+        filterOptions = filterPopoverViewControllerDelegate?.filterPopoverViewControllerNeedsFilterOptions(self)
+        
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellReuseIdentifier)
@@ -48,7 +48,7 @@ extension FilterPopoverViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseIdentifier, for: indexPath)
         if let filterOption = filterOptions?[indexPath.row] {
-            cell.textLabel?.text = filterOption
+            cell.textLabel?.text = filterOption.name
             if filterPopoverViewControllerDelegate?.filterPopoverViewController(self, isSelected: filterOption) == true {
                 cell.accessoryType = .checkmark
             } else {
