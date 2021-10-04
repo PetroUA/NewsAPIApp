@@ -7,14 +7,13 @@
 
 import UIKit
 
-class MainViewController: UIViewController, UISearchControllerDelegate {
+class MainViewController: UIViewController, UITableViewDelegate {
     
     @IBOutlet weak var tableView: UITableView!
     
     lazy var searchDataSource = SearchModelController()
     lazy var activityIndicator = ActivityIndicator()
     let searchController = UISearchController(searchResultsController: nil)
-    
     var searchModel: SearchModel?
     
     var activePopoverCurrentSources: [Source]?
@@ -25,11 +24,9 @@ class MainViewController: UIViewController, UISearchControllerDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        searchController.delegate = self
         searchController.searchBar.autocapitalizationType = .none
         searchController.searchBar.delegate = self
         
-        searchController.delegate = self
         searchController.obscuresBackgroundDuringPresentation = false
         searchController.searchBar.placeholder = "Search News"
         definesPresentationContext = true
@@ -37,7 +34,11 @@ class MainViewController: UIViewController, UISearchControllerDelegate {
         navigationItem.searchController = searchController
         
         searchDataSource.delegate = self
+        
+        tableView.register(UINib(nibName: "NewsTableViewCell", bundle: nil), forCellReuseIdentifier: "newsCell")
         tableView.dataSource = self
+        tableView.delegate = self
+        configureRefreshControl()
         
         searchDataSource.startNewSearch()
         
@@ -66,6 +67,20 @@ class MainViewController: UIViewController, UISearchControllerDelegate {
         }
     }
     
+    func configureRefreshControl () {
+        tableView.refreshControl = UIRefreshControl()
+        tableView.refreshControl?.addTarget(self, action:
+                                                #selector(handleRefreshControl),
+                                            for: .valueChanged)
+    }
+    
+    @objc func handleRefreshControl() {
+        searchDataSource.startNewSearch()
+        DispatchQueue.main.async {
+            self.tableView.refreshControl?.endRefreshing()
+        }
+    }
+
     func startActivityIndicator() {
         addChild(activityIndicator)
         activityIndicator.view.frame = view.frame
@@ -75,15 +90,30 @@ class MainViewController: UIViewController, UISearchControllerDelegate {
     }
     
     func stopActivityIndicator() {
-    
         activityIndicator.willMove(toParent: nil)
         activityIndicator.view.removeFromSuperview()
         activityIndicator.removeFromParent()
     }
     
-    @IBAction func testButtonTaped(_ sender: Any) {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if let url: URL = searchModel?.loadedSearchPages[indexPath.row].url {
+            let customViewController = CustomViewController.init()
+            customViewController.cellURL = url
+            self.navigationController?.pushViewController(customViewController, animated: true)
+        } else {
+            let alert = UIAlertController(title: "Alert", message: "News has mot URL", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
+        }
     }
+    
 }
+/*
+extension MainViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        print(indexPath)
+    }
+}*/
 
 extension MainViewController: UISearchBarDelegate {
     
@@ -97,22 +127,64 @@ extension MainViewController: UISearchBarDelegate {
 
 extension MainViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return searchModel?.totalSearchResults ?? 0
+        let numberOfLoadedItems = searchModel?.loadedSearchPages.count ?? 0
+        let totalItems = searchModel?.totalSearchResults ?? 0
+        
+        return numberOfLoadedItems < totalItems ? numberOfLoadedItems + 1 : numberOfLoadedItems
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "newsCell") as! NewsTableViewCell
-        let imageUrl = searchModel?.loadedSearchPages?[indexPath.row].urlToImage
-        let dafaultImageUrl = URL(string: "https://icons.iconarchive.com/icons/paomedia/small-n-flat/256/news-icon.png")
+        let numberOfLoadedItems = searchModel?.loadedSearchPages.count ?? 0
+        let totalItems = searchModel?.totalSearchResults ?? 0
         
-        if let data = try? Data(contentsOf: imageUrl ?? dafaultImageUrl!) {
-            cell.newsImage.image = UIImage(data: data)
+        if numberOfLoadedItems < totalItems, numberOfLoadedItems == indexPath.row {
+            searchDataSource.loadNextDataPageIfNeeded()
         }
         
-        cell.titelLabel.text = searchModel?.loadedSearchPages?[indexPath.row].title ?? ""
-        cell.detailsLabel.text = searchModel?.loadedSearchPages?[indexPath.row].description ?? ""
+        if indexPath.row < numberOfLoadedItems {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "newsCell") as! NewsTableViewCell
+            let imageUrl = searchModel?.loadedSearchPages[indexPath.row].urlToImage
+            
+            
+            cell.newsItemIndex = indexPath.row
+            cell.newsImage.image = nil
+            cell.imageLoadingActivityIndicator.isHidden = false
+            cell.imageLoadingActivityIndicator.startAnimating()
+            
+            DispatchQueue.global(qos: .userInitiated).async {
+                if let imageUrl = imageUrl,
+                   let data = try? Data(contentsOf: imageUrl),
+                   let image = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        guard cell.newsItemIndex == indexPath.row else {
+                            return
+                        }
+                        cell.imageLoadingActivityIndicator.stopAnimating()
+                        cell.imageLoadingActivityIndicator.isHidden = true
+                        cell.newsImage.image = image
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        guard cell.newsItemIndex == indexPath.row else {
+                            return
+                        }
+                        cell.imageLoadingActivityIndicator.stopAnimating()
+                        cell.imageLoadingActivityIndicator.isHidden = true
+                        cell.newsImage.image = UIImage(named: "newsIcon")
+                    }
+                }
+            }
+            
+            cell.titelLabel.text = searchModel?.loadedSearchPages[indexPath.row].title ?? ""
+            cell.detailsLabel.text = searchModel?.loadedSearchPages[indexPath.row].description ?? ""
+            cell.sourceLabel.text = searchModel?.loadedSearchPages[indexPath.row].source.name ?? ""
+            cell.authorLabel.text = searchModel?.loadedSearchPages[indexPath.row].author ?? ""
+            return cell
+        } else {
+            let cell = tableView.dequeueReusableCell(withIdentifier: "loadingCell")!
+            return cell
+        }
         
-        return cell
     }
     
 }
@@ -120,10 +192,12 @@ extension MainViewController: UITableViewDataSource {
 extension MainViewController: SearchModelControllerDelegate {
     func searchControllerDidUpdateState(_ searchModel: SearchModel) {
         self.searchModel = searchModel
-
+        
         switch searchModel.state {
         case .isLoading:
-            startActivityIndicator()
+            if searchModel.lastLoadedPage <= 1 {
+                startActivityIndicator()
+            }
             break
         case .error(let error):
             let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
@@ -136,7 +210,6 @@ extension MainViewController: SearchModelControllerDelegate {
             stopActivityIndicator()
         }
     }
-    
 }
 
 extension MainViewController: UIPopoverPresentationControllerDelegate {

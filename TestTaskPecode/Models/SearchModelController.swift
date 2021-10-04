@@ -18,11 +18,15 @@ protocol SearchModelControllerDelegate : AnyObject {
 }
 
 class SearchModelController {
-    let newsAPI = NewsAPI(apiKey: "173f64f5a786437288f02b4801373135") // "882d2acdf4b940e4b8a038bd81a45a93"
+    let newsAPI = NewsAPI(apiKey: "882d2acdf4b940e4b8a038bd81a45a93") // "173f64f5a786437288f02b4801373135"
     
     private var state: SearchModel.State = .empty
     private var isSourseSearch: Bool = false
     private var isSearchQuerySearch: Bool = false
+    private let pageSize: Int = 20
+    private var page: Int = 0
+    
+    private let sortBy: SortBy = .publishedAt
     
     private let categoryFilterOptions: [Category] = Category.allCases
     private var selectedCategoryFilter: Category?
@@ -34,25 +38,21 @@ class SearchModelController {
     private var selectedSourceFilters: [Source]?
     
     private var searchQuery: String?
-    private var loadedSearchPages: [Article]?
-    private var totalSearchResults: Int?
+    private var loadedSearchPages: [Article] = []
+    private var totalSearchResults: Int = 0
     
     weak var delegate: SearchModelControllerDelegate?
     
     func startNewSearch(){
-        state = .isLoading
-        notifyAboutStateChange()
+        page = 1
         
         loadData(needToLoadSources: true)
     }
     
     func loadNextDataPageIfNeeded() {
-        
-    }
-    
-    func stateChange() {
-        state = .isLoading
-        notifyAboutStateChange()
+        page += 1
+
+        loadData(needToLoadSources: false)
     }
     
     func applyCurrentCategoryFilter(selectedFilterOption: Category?) {
@@ -61,8 +61,7 @@ class SearchModelController {
         }
         selectedCategoryFilter = selectedFilterOption
         selectedSourceFilters = nil
-        
-        stateChange()
+        page = 1
         
         loadData(needToLoadSources: true)
     }
@@ -73,8 +72,7 @@ class SearchModelController {
         }
         selectedCountryFilter = selectedFilterOption
         selectedSourceFilters = nil
-        
-        stateChange()
+        page = 1
         
         loadData(needToLoadSources: true)
     }
@@ -85,8 +83,7 @@ class SearchModelController {
             return
         }
         selectedSourceFilters = selectedFilterOptions
-        
-        stateChange()
+        page = 1
         
         loadData(needToLoadSources: false)
     }
@@ -96,13 +93,18 @@ class SearchModelController {
             return
         }
         self.searchQuery = searchQuery
-        
-        stateChange()
+        page = 1
         
         loadData(needToLoadSources: false)
     }
     
     private func loadData(needToLoadSources: Bool) {
+        state = .isLoading
+        notifyAboutStateChange()
+        if page == 1 {
+            loadedSearchPages = []
+        }
+        
         let group = DispatchGroup()
         
         if needToLoadSources {
@@ -141,14 +143,14 @@ class SearchModelController {
             selectedSourceFilters = nil
         }
         
-        newsAPI.getTopHeadlines(requestParametrers: NewsAPI.NewsRequestParameters(searchKeywords: searchQuery, country: curentCountryFilter, category: curentCategoryFilter, everythingSources: selectedSourceFilters, sortBy: nil, page: nil, pageSize: nil)){ [weak self] (result) in
+        newsAPI.getTopHeadlines(requestParametrers: NewsAPI.NewsRequestParameters(searchKeywords: searchQuery, country: curentCountryFilter, category: curentCategoryFilter, everythingSources: selectedSourceFilters, sortBy: sortBy, page: page, pageSize: pageSize)){ [weak self] (result) in
             DispatchQueue.main.async {
                 guard let self = self else {
                     return
                 }
                 do {
                     let response = try result.get()
-                    self.loadedSearchPages = response.articles
+                    self.loadedSearchPages.append(contentsOf: response.articles)
                     self.totalSearchResults = response.totalResults
                     group.leave()
                 }
@@ -181,6 +183,7 @@ class SearchModelController {
                                        selectedSources: selectedSourceFilters,
                                        searchQuery: searchQuery,
                                        loadedSearchPages: loadedSearchPages,
+                                       lastLoadedPage: page,
                                        totalSearchResults: totalSearchResults)
         
         delegate?.searchControllerDidUpdateState(currentState)

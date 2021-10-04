@@ -41,6 +41,7 @@ struct SearchModel {
     
     let searchQuery: String?
     
-    let loadedSearchPages: [Article]?
-    let totalSearchResults: Int?
+    let loadedSearchPages: [Article]
+    let lastLoadedPage: Int
+    let totalSearchResults: Int
 }
