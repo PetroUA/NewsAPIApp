@@ -163,16 +163,17 @@
             </objects>
             <point key="canvasLocation" x="113.04347826086958" y="73.660714285714278"/>
         </scene>
-        <!--Favorites View Controller-->
+        <!--Favorites-->
         <scene sceneID="llR-EQ-A8K">
             <objects>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="WKm-TT-hVE" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <viewController id="ARr-qG-5Uz" customClass="FavoritesViewController" customModule="TestTaskPecode" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="YiZ-0i-Pcf">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="Sfp-jE-4ay">
-                                <rect key="frame" x="0.0" y="44" width="414" height="769"/>
+                                <rect key="frame" x="0.0" y="88" width="414" height="725"/>
                                 <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                             </tableView>
                         </subviews>
@@ -186,13 +187,30 @@
                         </constraints>
                     </view>
                     <tabBarItem key="tabBarItem" systemItem="favorites" id="vqD-YP-DKa"/>
+                    <navigationItem key="navigationItem" title="Favorites" id="rHM-yq-3CM"/>
                     <connections>
                         <outlet property="tableView" destination="Sfp-jE-4ay" id="Wyl-lw-AcB"/>
                     </connections>
                 </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="WKm-TT-hVE" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="113" y="727"/>
+            <point key="canvasLocation" x="1023" y="737"/>
+        </scene>
+        <!--Item-->
+        <scene sceneID="e1r-DE-gHG">
+            <objects>
+                <navigationController id="UyA-HO-dtx" sceneMemberID="viewController">
+                    <tabBarItem key="tabBarItem" title="Item" id="0XA-Gi-JEZ"/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="Dlh-gM-Upf">
+                        <rect key="frame" x="0.0" y="44" width="414" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <connections>
+                        <segue destination="ARr-qG-5Uz" kind="relationship" relationship="rootViewController" id="q20-Rx-CiF"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="8o2-J6-y03" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="113" y="737"/>
         </scene>
         <!--Tab Bar Controller-->
         <scene sceneID="vT9-Cc-Nsu">
@@ -205,7 +223,7 @@
                     </tabBar>
                     <connections>
                         <segue destination="yKz-f8-xR2" kind="relationship" relationship="viewControllers" id="Ubu-9k-0pU"/>
-                        <segue destination="ARr-qG-5Uz" kind="relationship" relationship="viewControllers" id="Cye-Bo-5Mo"/>
+                        <segue destination="UyA-HO-dtx" kind="relationship" relationship="viewControllers" id="Ufp-lB-322"/>
                     </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="rEN-Gf-ab8" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

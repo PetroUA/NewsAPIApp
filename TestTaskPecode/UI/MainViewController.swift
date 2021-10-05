@@ -7,15 +7,16 @@
 
 import UIKit
 
-class MainViewController: UIViewController, UITableViewDelegate {
+class MainViewController: UIViewController {
     
     @IBOutlet weak var tableView: UITableView!
     
     lazy var searchDataSource = SearchModelController()
     lazy var activityIndicator = ActivityIndicator()
+    lazy var favoriteNewsData = FavoriteNewsData()
     let searchController = UISearchController(searchResultsController: nil)
-    var searchModel: SearchModel?
     
+    var searchModel: SearchModel?
     var activePopoverCurrentSources: [Source]?
     var activePopoverCurrentCountry: Country?
     var activePopoverCurrentCategory: Category?
@@ -95,6 +96,11 @@ class MainViewController: UIViewController, UITableViewDelegate {
         activityIndicator.removeFromParent()
     }
     
+    
+    
+}
+
+extension MainViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if let url: URL = searchModel?.loadedSearchPages[indexPath.row].url {
             let customViewController = CustomViewController.init()
@@ -106,14 +112,7 @@ class MainViewController: UIViewController, UITableViewDelegate {
             self.present(alert, animated: true, completion: nil)
         }
     }
-    
 }
-/*
-extension MainViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        print(indexPath)
-    }
-}*/
 
 extension MainViewController: UISearchBarDelegate {
     
@@ -143,6 +142,7 @@ extension MainViewController: UITableViewDataSource {
         
         if indexPath.row < numberOfLoadedItems {
             let cell = tableView.dequeueReusableCell(withIdentifier: "newsCell") as! NewsTableViewCell
+            cell.delegate = self
             let imageUrl = searchModel?.loadedSearchPages[indexPath.row].urlToImage
             
             
@@ -187,6 +187,15 @@ extension MainViewController: UITableViewDataSource {
         
     }
     
+}
+
+extension MainViewController : NewsTableViewCellDelegate {
+    func newsTableViewCell(_ newsTableViewCell: NewsTableViewCell, ButtonTappedFor newsItemIndex: Int) {
+        favoriteNewsData.addFavoriteNews(article: (searchModel?.loadedSearchPages[newsItemIndex])!)
+        let alert = UIAlertController(title: "News add to favorite", message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        self.present(alert, animated: true, completion: nil)
+    }
 }
 
 extension MainViewController: SearchModelControllerDelegate {

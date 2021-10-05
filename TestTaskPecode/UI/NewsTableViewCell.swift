@@ -6,6 +6,9 @@
 //
 
 import UIKit
+protocol NewsTableViewCellDelegate: AnyObject {
+  func newsTableViewCell(_ newsTableViewCell: NewsTableViewCell, ButtonTappedFor youtuber: Int)
+}
 
 class NewsTableViewCell: UITableViewCell {
 
@@ -16,24 +19,27 @@ class NewsTableViewCell: UITableViewCell {
     @IBOutlet weak var authorLabel: UILabel!
     @IBOutlet weak var newsImage: UIImageView!
     @IBOutlet weak var imageLoadingActivityIndicator: UIActivityIndicatorView!
+    @IBOutlet weak var favoriteNewsButton: UIButton!
     
-    //var isFavouriteNews = false
+    let favoriteNewsData = FavoriteNewsData()
     
-    @IBAction func favouriteButton(_ sender: UIButton) {
-        
-    }
+    weak var delegate : NewsTableViewCellDelegate?
     
     var newsItemIndex: Int?
     
     override func awakeFromNib() {
         super.awakeFromNib()
+        
+        self.favoriteNewsButton.addTarget(self, action: #selector(ButtonTapped(_:)), for: .touchUpInside)
         // Initialization code
     }
 
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
-        
         // Configure the view for the selected state
     }
 
+    @IBAction func ButtonTapped(_ sender: UIButton){
+        self.delegate?.newsTableViewCell(self, ButtonTappedFor: newsItemIndex!)
+    }
 }
